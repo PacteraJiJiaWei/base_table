@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// 基本接口
 typedef BaseTableRowItem = Widget Function(BaseTableIndexPath indexPath);
 typedef BaseTableRowCount = int Function(int section);
 typedef BaseTableSectionItem = Widget Function(int section);
@@ -9,62 +10,65 @@ typedef BaseTableHeaderItem = Widget Function();
 typedef BaseTableFooterItem = Widget Function();
 typedef BaseTableBuildContext = Function(BuildContext context);
 
-/// 新增内嵌group
+/// group模式会用到的接口
 typedef BaseTableSectionTypes = BaseTableSectionType Function(int section);
+typedef BaseTableBuildGroupMargin = BaseTableGroupMargin Function(int section);
+typedef BaseTableBuildGroupRadius = double Function(int section);
 
 class BaseTable extends StatefulWidget {
-  /// 当前控件高度
+  /// 设置当前控件高度，如果不传，默认父控件高度
   final double height;
 
-  /// 当前控件宽度
+  /// 设置当前控件宽度，如果不传，默认父控件宽度
   final double width;
 
-  /// 背景颜色
+  /// 设置当前table的背景颜色
   final Color color;
 
   /// 滑动控制器
   final ScrollController controller;
 
-  /// section是否自动展开收起(默认false)
+  /// 设置当前table的section是否自动展开收起(默认false)
   final bool autoSpread;
 
-  /// List的section的数量
+  /// 设置当前table的section的数量
   final int sectionCount;
 
-  /// 当前section对应的row的数量
+  /// 设置当前section对应的row的数量
   final BaseTableRowCount rowCount;
 
-  /// 当前row对应的item
+  /// 设置当前row对应的视图
   final BaseTableRowItem row;
 
-  /// 当前section对应的item
+  /// 设置当前section_header对应的视图
   final BaseTableSectionItem sectionHeader;
 
-  /// 当前section对应的footer
+  /// 设置当前section_footer对应的视图
   final BaseTableSectionFooter sectionFooter;
 
-  /// 当前section的展开状态(默认true)
+  /// 设置当前section的展开状态
   final BaseTableSectionSpread sectionSpread;
 
-  /// header
+  /// 设置当前table的header对应的视图
   final BaseTableHeaderItem header;
 
-  /// footer
+  /// 设置当前table的footer对应的视图
   final BaseTableFooterItem footer;
 
-  /// 当前buildContext(手动刷新时使用)
+  /// 设置当前table对应的buildContext(手动刷新时使用)
   final BaseTableBuildContext buildContext;
 
-  /// 当前section的Type(normal, group)
+  /// 设置当前section的Type(normal, group)
   final BaseTableSectionTypes sectionTypes;
 
+  /// 设置group模块的背景颜色
   final Color groupColor;
 
-  final double groupMainMargin;
+  /// 设置当前group模块上，下，左，右的间距
+  final BaseTableBuildGroupMargin groupMargin;
 
-  final double groupCrossMargin;
-
-  final double groupRadius;
+  /// 设置当前group模块的圆角
+  final BaseTableBuildGroupRadius groupRadius;
 
   BaseTable({
     Key key,
@@ -84,15 +88,16 @@ class BaseTable extends StatefulWidget {
     this.buildContext,
     this.sectionTypes,
     this.groupColor = Colors.white,
-    this.groupMainMargin = 10.0,
-    this.groupCrossMargin = 10.0,
-    this.groupRadius = 5.0,
+    this.groupMargin,
+    this.groupRadius,
   })  : assert(rowCount != null, '需要通过rowCount来设置当前section的row的数量，不能为空'),
+        assert(autoSpread == null || sectionSpread == null, 'autoSpread属性与sectionSpread属性冲突，不能一起使用'),
         super(key: key);
 
   @override
   _BaseTableState createState() => _BaseTableState();
 
+  /// 用来获取当前的state
   static _BaseTableState of(BuildContext context) {
     return context.findAncestorStateOfType<_BaseTableState>();
   }
@@ -129,7 +134,7 @@ class _BaseTableState extends State<BaseTable> {
     });
   }
 
-  // 判断是否需要整体刷新数据
+  /// 判断是否需要整体刷新数据
   bool compareReload() {
     // 是否要刷新数据
     bool reload = false;
@@ -193,7 +198,6 @@ class _BaseTableState extends State<BaseTable> {
       if (widget.autoSpread == true) isNull ? isSpreads.add(isSpread) : isSpread = isSpreads[i];
 
       if (isSpread == true) {
-
         for (int j = 0; j < rows[i]; j++) {
           // 添加row对应的indexPath
           BaseTableIndexPath rowIndexPath = BaseTableIndexPath(
@@ -248,62 +252,13 @@ class _BaseTableState extends State<BaseTable> {
             itemBuilder: (context, index) {
               // 获取到当前item对应的indexPath
               BaseTableIndexPath currentIndexPath = indexPaths[index];
+
               // 根据indexPath的row属性来判断section/row/header/footer
-              if (currentIndexPath.type == BaseTableItemType.section_header) {
+              switch (currentIndexPath.type) {
+
                 // section_header
-                return GestureDetector(
-                  onTap: () {
-                    // 判断是否自动展开
-                    if (widget.autoSpread != true) return;
-                    // 判断展开记录状态
-                    bool currentState = isSpreads[currentIndexPath.section];
-                    // 修改对应展开状态
-                    isSpreads[currentIndexPath.section] = !currentState;
-                    spread = true;
-                    setState(() {
-                      // 重新生成坐标数组
-                      setUpIndexPaths();
-                    });
-                  },
-                  // 如果没有设置section对应的widget，默认SizedBox()占位
-                  child: widget.sectionHeader == null ? SizedBox() : widget.sectionHeader(currentIndexPath.section),
-                );
-              } else if (currentIndexPath.type == BaseTableItemType.section_footer) {
-                // section_footer
-                return widget.sectionFooter == null ? SizedBox() : widget.sectionFooter(currentIndexPath.section);
-              } else if (currentIndexPath.type == BaseTableItemType.header) {
-                // header
-                return widget.header == null ? SizedBox() : widget.header();
-              } else if (currentIndexPath.type == BaseTableItemType.footer) {
-                // footer
-                return widget.footer == null ? SizedBox() : widget.footer();
-              } else if (currentIndexPath.type == BaseTableItemType.group_row) {
-                // 内嵌group的row
-                return Container(
-                  color: widget.groupColor,
-                  margin: EdgeInsets.only(
-                    left: widget.groupCrossMargin,
-                    right: widget.groupCrossMargin,
-                  ),
-                  child: widget.row(currentIndexPath),
-                );
-              } else if (currentIndexPath.type == BaseTableItemType.group_section_header) {
-                // 内嵌group的section_header
-                return Container(
-                  margin: EdgeInsets.only(
-                    left: widget.groupCrossMargin,
-                    right: widget.groupCrossMargin,
-                    top: widget.groupMainMargin,
-                  ),
-                  padding: EdgeInsets.only(top: widget.groupRadius),
-                  decoration: BoxDecoration(
-                    color: widget.groupColor,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(widget.groupRadius),
-                      topRight: Radius.circular(widget.groupRadius),
-                    ),
-                  ),
-                  child: GestureDetector(
+                case BaseTableItemType.section_header:
+                  return GestureDetector(
                     onTap: () {
                       // 判断是否自动展开
                       if (widget.autoSpread != true) return;
@@ -318,34 +273,112 @@ class _BaseTableState extends State<BaseTable> {
                       });
                     },
                     // 如果没有设置section对应的widget，默认SizedBox()占位
-                    child: widget.sectionHeader == null
-                        ? SizedBox(
-                            height: widget.groupRadius,
-                          )
-                        : widget.sectionHeader(currentIndexPath.section),
-                  ),
-                );
-              } else if (currentIndexPath.type == BaseTableItemType.group_section_footer) {
-                // 内嵌group的section_footer
-                return Container(
-                  margin: EdgeInsets.only(
-                    left: widget.groupCrossMargin,
-                    right: widget.groupCrossMargin,
-                    bottom: widget.groupMainMargin,
-                  ),
-                  padding: EdgeInsets.only(bottom: widget.groupRadius),
-                  decoration: BoxDecoration(
-                    color: widget.groupColor,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(widget.groupRadius),
-                      bottomRight: Radius.circular(widget.groupRadius),
+                    child: widget.sectionHeader == null ? SizedBox() : widget.sectionHeader(currentIndexPath.section),
+                  );
+
+                // section_footer
+                case BaseTableItemType.section_footer:
+                  return widget.sectionFooter == null ? SizedBox() : widget.sectionFooter(currentIndexPath.section);
+
+                // header
+                case BaseTableItemType.header:
+                  return widget.header == null ? SizedBox() : widget.header();
+
+                // footer
+                case BaseTableItemType.footer:
+                  return widget.footer == null ? SizedBox() : widget.footer();
+
+                // 内嵌group的section_header
+                case BaseTableItemType.group_section_header:
+                  // 获取group的外间距
+                  BaseTableGroupMargin margin = widget.groupMargin != null
+                      ? widget.groupMargin(currentIndexPath.section)
+                      : BaseTableGroupMargin();
+                  // 获取group的圆角
+                  double radius = widget.groupRadius != null ? widget.groupRadius(currentIndexPath.section) : 10.0;
+                  return Container(
+                    margin: EdgeInsets.only(
+                      left: margin.left,
+                      right: margin.right,
+                      top: margin.top,
                     ),
-                  ),
-                  child: widget.sectionFooter == null ? SizedBox() : widget.sectionFooter(currentIndexPath.section),
-                );
-              } else {
+                    padding: EdgeInsets.only(top: radius),
+                    decoration: BoxDecoration(
+                      color: widget.groupColor,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(radius),
+                        topRight: Radius.circular(radius),
+                      ),
+                    ),
+                    child: GestureDetector(
+                      onTap: () {
+                        // 判断是否自动展开
+                        if (widget.autoSpread != true) return;
+                        // 判断展开记录状态
+                        bool currentState = isSpreads[currentIndexPath.section];
+                        // 修改对应展开状态
+                        isSpreads[currentIndexPath.section] = !currentState;
+                        spread = true;
+                        setState(() {
+                          // 重新生成坐标数组
+                          setUpIndexPaths();
+                        });
+                      },
+                      // 如果没有设置section对应的widget，默认SizedBox()占位
+                      child: widget.sectionHeader == null
+                          ? SizedBox(
+                              height: radius,
+                            )
+                          : widget.sectionHeader(currentIndexPath.section),
+                    ),
+                  );
+
+                // 内嵌group的section_footer
+                case BaseTableItemType.group_section_footer:
+                  // 获取group的外间距
+                  BaseTableGroupMargin margin = widget.groupMargin != null
+                      ? widget.groupMargin(currentIndexPath.section)
+                      : BaseTableGroupMargin();
+                  // 获取group的圆角
+                  double radius = widget.groupRadius != null ? widget.groupRadius(currentIndexPath.section) : 10.0;
+                  return Container(
+                    margin: EdgeInsets.only(
+                      left: margin.left,
+                      right: margin.right,
+                      bottom: margin.bottom,
+                    ),
+                    padding: EdgeInsets.only(bottom: radius),
+                    decoration: BoxDecoration(
+                      color: widget.groupColor,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(radius),
+                        bottomRight: Radius.circular(radius),
+                      ),
+                    ),
+                    child: widget.sectionFooter == null ? SizedBox() : widget.sectionFooter(currentIndexPath.section),
+                  );
+
+                // 内嵌group的row
+                case BaseTableItemType.group_row:
+                  // 获取group的外间距
+                  BaseTableGroupMargin margin = widget.groupMargin != null
+                      ? widget.groupMargin(currentIndexPath.section)
+                      : BaseTableGroupMargin();
+                  return Container(
+                    color: widget.groupColor,
+                    margin: EdgeInsets.only(
+                      left: margin.left,
+                      right: margin.right,
+                    ),
+                    child: widget.row(currentIndexPath),
+                  );
+
                 // row
-                return widget.row(currentIndexPath);
+                case BaseTableItemType.row:
+                  return widget.row(currentIndexPath);
+
+                default:
+                  return SizedBox();
               }
             },
           ),
@@ -399,4 +432,27 @@ enum BaseTableItemType {
 enum BaseTableSectionType {
   normal,
   group,
+}
+
+/// 记录group模式外间距
+class BaseTableGroupMargin {
+  /// 左间距
+  double left;
+
+  /// 右间距
+  double right;
+
+  /// 上间距
+  double top;
+
+  /// 下间距
+  double bottom;
+
+  BaseTableGroupMargin({
+    Key key,
+    this.left = 10.0,
+    this.right = 10.0,
+    this.top = 10.0,
+    this.bottom = 10.0,
+  });
 }
