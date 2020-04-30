@@ -124,12 +124,8 @@ class MyApp extends StatelessWidget {
             ),
             body: BaseTable(
               color: Color.fromARGB(255, 220, 220, 220),
-              groupColor: Colors.white,
               groupMargin: (section) {
                 return BaseTableGroupMargin(left: 10.0, right: 10.0,top: 10.0,bottom: 10.0);
-              },
-              groupRadius: (section) {
-                return 10.0;
               },
               autoSpread: true,
               sectionCount: dataList.length,
@@ -174,7 +170,7 @@ class MyApp extends StatelessWidget {
               footer: () {
                 return SizedBox();
               },
-              sectionTypes: (section) {
+              sectionType: (section) {
                 return dataList[section]['type'] == '2' ? BaseTableSectionType.group : BaseTableSectionType.normal;
               },
               row: (indexPath) {

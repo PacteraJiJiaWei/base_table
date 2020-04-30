@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// 基本接口
 typedef BaseTableRowItem = Widget Function(BaseTableIndexPath indexPath);
 typedef BaseTableRowCount = int Function(int section);
 typedef BaseTableSectionItem = Widget Function(int section);
@@ -9,11 +8,8 @@ typedef BaseTableSectionFooter = Widget Function(int section);
 typedef BaseTableHeaderItem = Widget Function();
 typedef BaseTableFooterItem = Widget Function();
 typedef BaseTableBuildContext = Function(BuildContext context);
-
-/// group模式会用到的接口
-typedef BaseTableSectionTypes = BaseTableSectionType Function(int section);
+typedef BaseTableSectionItemType = BaseTableSectionType Function(int section);
 typedef BaseTableBuildGroupMargin = BaseTableGroupMargin Function(int section);
-typedef BaseTableBuildGroupRadius = double Function(int section);
 
 class BaseTable extends StatefulWidget {
   /// 设置当前控件高度，如果不传，默认父控件高度
@@ -59,16 +55,10 @@ class BaseTable extends StatefulWidget {
   final BaseTableBuildContext buildContext;
 
   /// 设置当前section的Type(normal, group)
-  final BaseTableSectionTypes sectionTypes;
-
-  /// 设置group模块的背景颜色
-  final Color groupColor;
+  final BaseTableSectionItemType sectionType;
 
   /// 设置当前group模块上，下，左，右的间距
   final BaseTableBuildGroupMargin groupMargin;
-
-  /// 设置当前group模块的圆角
-  final BaseTableBuildGroupRadius groupRadius;
 
   BaseTable({
     Key key,
@@ -86,10 +76,8 @@ class BaseTable extends StatefulWidget {
     this.header,
     this.footer,
     this.buildContext,
-    this.sectionTypes,
-    this.groupColor = Colors.white,
+    this.sectionType,
     this.groupMargin,
-    this.groupRadius,
   })  : assert(rowCount != null, '需要通过rowCount来设置当前section的row的数量，不能为空'),
         assert(autoSpread == null || sectionSpread == null, 'autoSpread属性与sectionSpread属性冲突，不能一起使用'),
         super(key: key);
@@ -183,7 +171,7 @@ class _BaseTableState extends State<BaseTable> {
     bool isNull = isSpreads.length == 0;
 
     for (int i = 0; i < rows.length; i++) {
-      BaseTableSectionType type = widget.sectionTypes != null ? widget.sectionTypes(i) : BaseTableSectionType.normal;
+      BaseTableSectionType type = widget.sectionType != null ? widget.sectionType(i) : BaseTableSectionType.normal;
       // 添加section_header对应的indexPath
       BaseTableIndexPath sectionIndexPath = BaseTableIndexPath(
           section: i,
@@ -294,21 +282,12 @@ class _BaseTableState extends State<BaseTable> {
                   BaseTableGroupMargin margin = widget.groupMargin != null
                       ? widget.groupMargin(currentIndexPath.section)
                       : BaseTableGroupMargin();
-                  // 获取group的圆角
-                  double radius = widget.groupRadius != null ? widget.groupRadius(currentIndexPath.section) : 10.0;
                   return Container(
+                    color: Colors.transparent,
                     margin: EdgeInsets.only(
                       left: margin.left,
                       right: margin.right,
                       top: margin.top,
-                    ),
-                    padding: EdgeInsets.only(top: radius),
-                    decoration: BoxDecoration(
-                      color: widget.groupColor,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(radius),
-                        topRight: Radius.circular(radius),
-                      ),
                     ),
                     child: GestureDetector(
                       onTap: () {
@@ -326,9 +305,7 @@ class _BaseTableState extends State<BaseTable> {
                       },
                       // 如果没有设置section对应的widget，默认SizedBox()占位
                       child: widget.sectionHeader == null
-                          ? SizedBox(
-                              height: radius,
-                            )
+                          ? SizedBox()
                           : widget.sectionHeader(currentIndexPath.section),
                     ),
                   );
@@ -339,21 +316,12 @@ class _BaseTableState extends State<BaseTable> {
                   BaseTableGroupMargin margin = widget.groupMargin != null
                       ? widget.groupMargin(currentIndexPath.section)
                       : BaseTableGroupMargin();
-                  // 获取group的圆角
-                  double radius = widget.groupRadius != null ? widget.groupRadius(currentIndexPath.section) : 10.0;
                   return Container(
+                    color: Colors.transparent,
                     margin: EdgeInsets.only(
                       left: margin.left,
                       right: margin.right,
                       bottom: margin.bottom,
-                    ),
-                    padding: EdgeInsets.only(bottom: radius),
-                    decoration: BoxDecoration(
-                      color: widget.groupColor,
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(radius),
-                        bottomRight: Radius.circular(radius),
-                      ),
                     ),
                     child: widget.sectionFooter == null ? SizedBox() : widget.sectionFooter(currentIndexPath.section),
                   );
@@ -365,7 +333,7 @@ class _BaseTableState extends State<BaseTable> {
                       ? widget.groupMargin(currentIndexPath.section)
                       : BaseTableGroupMargin();
                   return Container(
-                    color: widget.groupColor,
+                    color: Colors.transparent,
                     margin: EdgeInsets.only(
                       left: margin.left,
                       right: margin.right,
