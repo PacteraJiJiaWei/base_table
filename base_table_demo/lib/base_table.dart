@@ -240,6 +240,9 @@ class _BaseTableState extends State<BaseTable> {
             itemBuilder: (context, index) {
               // 获取到当前item对应的indexPath
               BaseTableIndexPath currentIndexPath = indexPaths[index];
+              // 获取group的外间距
+              BaseTableGroupMargin margin =
+                  widget.groupMargin != null ? widget.groupMargin(currentIndexPath.section) : BaseTableGroupMargin();
 
               // 根据indexPath的row属性来判断section/row/header/footer
               switch (currentIndexPath.type) {
@@ -278,10 +281,6 @@ class _BaseTableState extends State<BaseTable> {
 
                 // 内嵌group的section_header
                 case BaseTableItemType.group_section_header:
-                  // 获取group的外间距
-                  BaseTableGroupMargin margin = widget.groupMargin != null
-                      ? widget.groupMargin(currentIndexPath.section)
-                      : BaseTableGroupMargin();
                   return Container(
                     color: Colors.transparent,
                     margin: EdgeInsets.only(
@@ -304,18 +303,12 @@ class _BaseTableState extends State<BaseTable> {
                         });
                       },
                       // 如果没有设置section对应的widget，默认SizedBox()占位
-                      child: widget.sectionHeader == null
-                          ? SizedBox()
-                          : widget.sectionHeader(currentIndexPath.section),
+                      child: widget.sectionHeader == null ? SizedBox() : widget.sectionHeader(currentIndexPath.section),
                     ),
                   );
 
                 // 内嵌group的section_footer
                 case BaseTableItemType.group_section_footer:
-                  // 获取group的外间距
-                  BaseTableGroupMargin margin = widget.groupMargin != null
-                      ? widget.groupMargin(currentIndexPath.section)
-                      : BaseTableGroupMargin();
                   return Container(
                     color: Colors.transparent,
                     margin: EdgeInsets.only(
@@ -328,10 +321,6 @@ class _BaseTableState extends State<BaseTable> {
 
                 // 内嵌group的row
                 case BaseTableItemType.group_row:
-                  // 获取group的外间距
-                  BaseTableGroupMargin margin = widget.groupMargin != null
-                      ? widget.groupMargin(currentIndexPath.section)
-                      : BaseTableGroupMargin();
                   return Container(
                     color: Colors.transparent,
                     margin: EdgeInsets.only(
@@ -358,6 +347,7 @@ class _BaseTableState extends State<BaseTable> {
   @override
   void dispose() {
     super.dispose();
+    if (widget.controller != null) widget.controller.dispose();
   }
 }
 
