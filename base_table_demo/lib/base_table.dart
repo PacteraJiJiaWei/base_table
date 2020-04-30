@@ -66,7 +66,7 @@ class BaseTable extends StatefulWidget {
     this.width,
     this.color = Colors.black12,
     this.controller,
-    this.autoSpread = false,
+    this.autoSpread,
     this.sectionCount = 1,
     this.rowCount,
     this.row,
